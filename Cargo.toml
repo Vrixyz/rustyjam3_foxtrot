@@ -1,7 +1,7 @@
 [package]
 authors = ["Jan Hohenheim <jan@hohenheim.ch>"]
 edition = "2021"
-name = "foxtrot"
+name = "detectivefox"
 version = "0.2.0"
 license = "MIT OR Apache-2.0"
 exclude = [
@@ -92,6 +92,7 @@ bevy_dolly = { git = "https://github.com/BlackPhlox/bevy_dolly", rev = "b2f5dc78
 spew = "0.2.1"
 bevy_mod_sysfail = "2"
 seldom_fn_plugin = "0.3"
+bevy_basic_portals = "0.1" #{ git = "https://github.com/Selene-Amanita/bevy_basic_portals.git" }
 
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.28", default-features = false }

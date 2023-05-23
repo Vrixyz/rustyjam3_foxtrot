@@ -29,7 +29,7 @@ https://user-images.githubusercontent.com/9047632/226387411-70f662de-0681-47ff-b
 
 ## Usage
 
-Simply use the [template button on GitHub](https://github.com/janhohenheim/foxtrot/generate) to create a new repository from this template.
+Simply use the [template button on GitHub](https://github.com/Vrixyz/detectivefox/generate) to create a new repository from this template.
 Then, replace all instances of the word `foxtrot` with the name of your game. Change the game version as well as the author information in the following files:
 - `Cargo.toml`
 - `build/windows/installer/Package.wxs`

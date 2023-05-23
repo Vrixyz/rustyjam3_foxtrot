@@ -453,6 +453,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_basic_portals"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8099453359cd26bd42578d493e886981bf77c07eeea67cb172cbad19809b24f"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_common_assets"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1771,6 +1780,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "detectivefox"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy_asset_loader",
+ "bevy_basic_portals",
+ "bevy_common_assets",
+ "bevy_dolly",
+ "bevy_editor_pls",
+ "bevy_egui",
+ "bevy_hanabi",
+ "bevy_kira_audio",
+ "bevy_mod_sysfail",
+ "bevy_prototype_debug_lines",
+ "bevy_rapier3d",
+ "bitflags 2.1.0",
+ "chrono",
+ "embed-resource",
+ "glob",
+ "image",
+ "indexmap",
+ "iyes_progress",
+ "leafwing-input-manager",
+ "oxidized_navigation",
+ "rand",
+ "regex",
+ "ron",
+ "seldom_fn_plugin",
+ "serde",
+ "spew",
+ "strum",
+ "strum_macros",
+ "unicode-segmentation",
+ "warbler_grass",
+ "wasm-bindgen",
+ "winit",
+]
+
+[[package]]
 name = "dirs"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2024,45 +2073,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9c384f161156f5260c24a097c56119f9be8c798586aecc13afbcbe7b7e26bf8"
 dependencies = [
  "percent-encoding",
-]
-
-[[package]]
-name = "foxtrot"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "bevy",
- "bevy_asset_loader",
- "bevy_common_assets",
- "bevy_dolly",
- "bevy_editor_pls",
- "bevy_egui",
- "bevy_hanabi",
- "bevy_kira_audio",
- "bevy_mod_sysfail",
- "bevy_prototype_debug_lines",
- "bevy_rapier3d",
- "bitflags 2.1.0",
- "chrono",
- "embed-resource",
- "glob",
- "image",
- "indexmap",
- "iyes_progress",
- "leafwing-input-manager",
- "oxidized_navigation",
- "rand",
- "regex",
- "ron",
- "seldom_fn_plugin",
- "serde",
- "spew",
- "strum",
- "strum_macros",
- "unicode-segmentation",
- "warbler_grass",
- "wasm-bindgen",
- "winit",
 ]
 
 [[package]]
