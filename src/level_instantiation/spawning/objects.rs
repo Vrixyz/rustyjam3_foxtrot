@@ -7,6 +7,7 @@ pub(crate) mod npc;
 pub(crate) mod orb;
 pub(crate) mod player;
 pub(crate) mod point_light;
+pub(crate) mod portal;
 pub(crate) mod primitives;
 pub(crate) mod skydome;
 pub(crate) mod sunlight;

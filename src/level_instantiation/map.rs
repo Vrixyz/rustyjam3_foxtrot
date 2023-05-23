@@ -3,10 +3,12 @@ use crate::level_instantiation::spawning::GameObject;
 use crate::player_control::player_embodiment::Player;
 use crate::GameState;
 use bevy::prelude::*;
+use bevy_basic_portals::portals::PortalsPlugin;
 use bevy_egui::{egui, EguiContexts};
 use spew::prelude::*;
 
 pub(crate) fn map_plugin(app: &mut App) {
+    app.add_plugin(PortalsPlugin::default());
     app.add_system(
         setup
             .run_if(not(resource_exists::<CurrentLevel>()))
@@ -39,6 +41,11 @@ fn setup(
     // Make sure the player is spawned after the level
     delayed_spawner.send(
         SpawnEvent::with_data(GameObject::Player, Transform::from_xyz(0., 1.5, 0.)).delay_frames(2),
+    );
+    // Make sure the portal is spawned after the level
+    delayed_spawner.send(
+        SpawnEvent::with_data(GameObject::Portal, Transform::from_xyz(0., 1.5, -3.))
+            .delay_frames(2),
     );
 }
 

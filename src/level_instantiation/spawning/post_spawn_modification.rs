@@ -1,11 +1,15 @@
 use crate::level_instantiation::spawning::despawn::Despawn;
 use crate::level_instantiation::spawning::objects::level::Imported;
+use crate::player_control::camera::IngameCamera;
 use anyhow::{Context, Result};
 use bevy::pbr::NotShadowCaster;
 use bevy::prelude::*;
+use bevy_basic_portals::{CreatePortal, CreatePortalBundle};
 use bevy_mod_sysfail::macros::*;
 use regex::Regex;
 use std::sync::LazyLock;
+
+use super::objects::portal::PortalSpawnPoint;
 
 pub(crate) fn set_hidden(mut added_name: Query<(&Name, &mut Visibility), Added<Name>>) {
     #[cfg(feature = "tracing")]
