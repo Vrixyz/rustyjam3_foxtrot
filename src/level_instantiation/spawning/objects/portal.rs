@@ -52,7 +52,7 @@ pub(crate) fn spawn(
                 ..default()
             }),*/
             // I have to provide a camera because there are multiple cameras in foxtrot.
-            main_camera: Some(camera_query.iter().next().unwrap()),
+            main_camera: None,
             ..default()
         },
         ..default()

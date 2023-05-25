@@ -1,0 +1,70 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'detectivefox'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=detectivefox"
+                ],
+                "filter": {
+                    "name": "detectivefox",
+                    "kind": "lib"
+                }
+            },
+            "env": {
+                "BEVY_ASSET_ROOT": "${workspaceFolder}"
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'detectivefox'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=detectivefox",
+                    "--package=detectivefox"
+                ],
+                "filter": {
+                    "name": "detectivefox",
+                    "kind": "bin"
+                },
+            },
+            "env": {
+                "BEVY_ASSET_ROOT": "${workspaceFolder}/",
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'detectivefox'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=detectivefox",
+                    "--package=detectivefox"
+                ],
+                "filter": {
+                    "name": "detectivefox",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
