@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::file_system_interaction::level_serialization::{CurrentLevel, WorldLoadRequest};
 use crate::level_instantiation::spawning::GameObject;
 use crate::player_control::player_embodiment::Player;
@@ -5,6 +7,8 @@ use crate::GameState;
 use bevy::prelude::*;
 use bevy_basic_portals::portals::PortalsPlugin;
 use bevy_egui::{egui, EguiContexts};
+use rand::rngs::SmallRng;
+use rand::{Rng, SeedableRng};
 use spew::prelude::*;
 
 pub(crate) fn map_plugin(app: &mut App) {
@@ -18,7 +22,13 @@ pub(crate) fn map_plugin(app: &mut App) {
         show_loading_screen
             .run_if(not(any_with_component::<Player>()))
             .in_set(OnUpdate(GameState::Playing)),
-    );
+    )
+    .add_system(
+        spawn_portals
+            .run_if(any_with_component::<Player>())
+            .in_set(OnUpdate(GameState::Playing)),
+    )
+    .add_system(crate::util::delay_destroy::delay_destroy);
 
     #[cfg(feature = "wasm")]
     app.add_system(show_wasm_loader.in_set(OnUpdate(GameState::Playing)));
@@ -42,10 +52,6 @@ fn setup(
     delayed_spawner.send(
         SpawnEvent::with_data(GameObject::Player, Transform::from_xyz(0., 1.5, 0.)).delay_frames(2),
     );
-    // Make sure the portal is spawned after the level
-    delayed_spawner.send(
-        SpawnEvent::with_data(GameObject::Portal, Transform::from_xyz(0., 1., -5.)).delay_frames(3),
-    );
 }
 
 fn show_loading_screen(mut egui_contexts: EguiContexts) {
@@ -61,6 +67,40 @@ fn show_loading_screen(mut egui_contexts: EguiContexts) {
             ui.label("This may take a while. Don't worry, your browser did not crash!");
         });
     });
+}
+
+fn spawn_portals(
+    time: Res<Time>,
+    mut delayed_spawner: EventWriter<SpawnEvent<GameObject, Transform>>,
+    mut timer: Local<Timer>,
+    mut random_spawn: Local<Option<SmallRng>>,
+) {
+    let Some(rng) = &mut *random_spawn else {
+        *random_spawn = Some(SmallRng::from_entropy());
+        return;
+    };
+    timer.tick(time.delta());
+    if timer.finished() {
+        timer.set_duration(Duration::from_secs(5));
+        timer.reset();
+
+        // Make sure the portal is spawned after the level
+        delayed_spawner.send(
+            SpawnEvent::with_data(
+                GameObject::Portal,
+                Transform::from_xyz(
+                    rng.gen_range(-10f32..10f32),
+                    1.,
+                    rng.gen_range(-10f32..10f32),
+                )
+                .with_rotation(Quat::from_axis_angle(
+                    Vec3::Y,
+                    rng.gen_range(0f32..std::f32::consts::TAU),
+                )),
+            )
+            .delay_frames(3),
+        );
+    }
 }
 
 #[cfg(feature = "wasm")]

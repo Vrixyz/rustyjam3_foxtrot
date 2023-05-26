@@ -1,4 +1,5 @@
 pub(crate) mod criteria;
+pub(crate) mod delay_destroy;
 pub(crate) mod trait_extension;
 
 pub(crate) fn smoothness_to_lerp_factor(smoothness: f32, dt: f32) -> f32 {
