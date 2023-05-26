@@ -24,8 +24,8 @@ rustflags = [
 ]
 
 [target.x86_64-pc-windows-msvc]
-# linker = "rust-lld.exe"
-# rustflags = ["-Z", "share-generics=n"]
+linker = "rust-lld.exe"
+rustflags = ["-Z", "share-generics=n"]
 
 # Enable only a small amount of optimization in debug mode
 [profile.dev]

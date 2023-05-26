@@ -44,7 +44,7 @@ fn setup(
     );
     // Make sure the portal is spawned after the level
     delayed_spawner.send(
-        SpawnEvent::with_data(GameObject::Portal, Transform::from_xyz(0., 1., -5.)).delay_frames(2),
+        SpawnEvent::with_data(GameObject::Portal, Transform::from_xyz(0., 1., -5.)).delay_frames(3),
     );
 }
 

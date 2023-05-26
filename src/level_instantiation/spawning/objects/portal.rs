@@ -37,7 +37,7 @@ pub(crate) fn spawn(
     let portal_mesh = get_or_add_mesh_portal_handle(&mut meshes);
     let portal_position = Transform::from_xyz(
         transform.translation.x,
-        transform.translation.y + 3.,
+        transform.translation.y + 150.,
         transform.translation.z,
     );
     commands.spawn(CreatePortalBundle {
@@ -55,7 +55,7 @@ pub(crate) fn spawn(
                 ..default()
             }),
             // I have to provide a camera because there are multiple cameras in foxtrot.
-            main_camera: None,
+            main_camera: Some(camera_query.iter().next().unwrap()),
 
             ..default()
         },
@@ -66,78 +66,31 @@ pub(crate) fn spawn(
         radius: 0.25,
         ..default()
     }));
-    let mut ball_pos = portal_position.translation;
-    ball_pos += Vec3::Z * -1.;
+    let mut inside_portal_pos = portal_position.translation;
+    inside_portal_pos += Vec3::Z * -1.;
     commands.spawn(PbrBundle {
         mesh: sphere_mesh.clone(),
-        transform: Transform::from_translation(ball_pos),
+        transform: Transform::from_translation(inside_portal_pos),
         ..default()
     });
     // End remove
 
     // This is my attempt to create something more complex, but let's focus on the minimal above.
 
-    /*
-    let mesh_handle = get_or_add_mesh_handle(&mut meshes);
-    commands.spawn(CreatePortalBundle {
-        mesh: mesh_handle,
-        portal_transform: transform,
-        // This component will be deleted and things that are needed to create the portal will be created
-        create_portal: CreatePortal {
-            destination: AsPortalDestination::Create(CreatePortalDestination {
-                transform: Transform::from_xyz(
-                    transform.translation.x,
-                    150.,
-                    transform.translation.z - 5.,
-                ),
-            }),
-            // Uncomment this to see the portal
-            debug: Some(DebugPortal {
-                show_window: false,
-                ..default()
-            }),
-            main_camera: Some(camera_query.iter().next().unwrap()),
-            ..default()
-        },
-        ..default()
-    });*/
-    /*
     let entity = commands
         .spawn((
             PbrBundle {
-                transform: Transform::from_xyz(
-                    transform.translation.x,
-                    2., //150.,
-                    transform.translation.z,
-                ),
+                transform: Transform::from_translation(inside_portal_pos),
                 ..default()
             },
-            Name::new("Portal"),
-            CharacterControllerBundle::capsule(HEIGHT, RADIUS),
+            Name::new("Character model"),
             //Follower,
             CharacterAnimations {
                 idle: animations.character_idle.clone(),
                 walk: animations.character_walking.clone(),
                 aerial: animations.character_running.clone(),
             },
-            DialogTarget {
-                dialog_id: DialogId::new("follower"),
-            },
-            GameObject::Npc,
         ))
-        .with_children(|parent| {
-            parent.spawn((
-                Name::new("NPC Dialog Collider"),
-                Collider::cylinder(HEIGHT / 2., RADIUS * 5.),
-                Sensor,
-                ActiveEvents::COLLISION_EVENTS,
-                ActiveCollisionTypes::DYNAMIC_DYNAMIC,
-                CollisionGroups::new(
-                    GameCollisionGroup::OTHER.into(),
-                    GameCollisionGroup::PLAYER.into(),
-                ),
-            ));
-        })
         .id();
     commands
         .spawn((
@@ -150,13 +103,13 @@ pub(crate) fn spawn(
                 SceneBundle {
                     scene: scene_handles.character.clone(),
                     transform: Transform {
-                        translation: Vec3::new(0., -HEIGHT / 2. - RADIUS, 0.),
+                        translation: inside_portal_pos,
                         scale: Vec3::splat(0.012),
-                        rotation: Quat::from_rotation_y(TAU / 2.),
+                        ..default()
                     },
                     ..default()
                 },
                 Name::new("Portal Model"),
             ));
-        });*/
+        });
 }

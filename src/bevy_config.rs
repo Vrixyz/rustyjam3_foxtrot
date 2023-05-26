@@ -1,30 +1,35 @@
 use anyhow::{Context, Result};
+use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::window::PresentMode;
 use bevy::window::PrimaryWindow;
 #[cfg(not(feature = "wasm"))]
 use bevy::window::WindowMode;
 use bevy::winit::WinitWindows;
+use bevy_diagnostics_explorer::DiagnosticExplorerAgentPlugin;
 use bevy_mod_sysfail::macros::*;
 use std::io::Cursor;
 use winit::window::Icon;
 
 /// Overrides the default Bevy plugins and configures things like the screen settings.
 pub(crate) fn bevy_config_plugin(app: &mut App) {
-    let default_plugins = DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            resolution: (800., 600.).into(),
-            title: "Foxtrot".to_string(),
-            canvas: Some("#bevy".to_owned()),
-            present_mode: PresentMode::AutoVsync,
-            // This breaks WASM for some reason
-            #[cfg(not(feature = "wasm"))]
-            mode: WindowMode::BorderlessFullscreen,
-            fit_canvas_to_parent: true,
+    let default_plugins = DefaultPlugins
+        .set(WindowPlugin {
+            primary_window: Some(Window {
+                resolution: (800., 600.).into(),
+                title: "Foxtrot".to_string(),
+                canvas: Some("#bevy".to_owned()),
+                present_mode: PresentMode::AutoVsync,
+                // This breaks WASM for some reason
+                #[cfg(not(feature = "wasm"))]
+                mode: WindowMode::BorderlessFullscreen,
+                fit_canvas_to_parent: true,
+                ..default()
+            }),
             ..default()
-        }),
-        ..default()
-    });
+        })
+        .disable::<LogPlugin>()
+        .add(DiagnosticExplorerAgentPlugin);
     #[cfg(feature = "native-dev")]
     let default_plugins = default_plugins.set(AssetPlugin {
         watch_for_changes: true,
