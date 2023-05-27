@@ -44,7 +44,7 @@ pub(crate) struct AudioAssets {
 pub(crate) struct SceneAssets {
     #[asset(path = "scenes/Fox.glb#Scene0")]
     pub(crate) character: Handle<Scene>,
-    #[asset(path = "scenes/old_town.glb#Scene0")]
+    #[asset(path = "scenes/old_town_empty_center.glb#Scene0")]
     pub(crate) level: Handle<Scene>,
 }
 
