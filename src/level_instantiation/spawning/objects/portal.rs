@@ -15,14 +15,11 @@ use super::util::MeshAssetsExt;
 pub(crate) const HEIGHT: f32 = 0.4;
 pub(crate) const RADIUS: f32 = 0.4;
 
-#[derive(Component)]
-pub(crate) struct PortalSpawnPoint(pub Option<CreatePortalBundle>);
-
-fn get_or_add_mesh_handle(mesh_assets: &mut Assets<Mesh>) -> Handle<Mesh> {
+fn get_or_add_mesh_portal_handle(mesh_assets: &mut Assets<Mesh>) -> Handle<Mesh> {
     const MESH_HANDLE: HandleUntyped =
         HandleUntyped::weak_from_u64(Mesh::TYPE_UUID, 0x1f40128bac02a9c);
     mesh_assets.get_or_add(MESH_HANDLE, || {
-        Mesh::from(shape::Quad::new(Vec2::new(5., 5.)))
+        Mesh::from(shape::Quad::new(Vec2::new(1., 2.)))
     })
 }
 
@@ -37,34 +34,43 @@ pub(crate) fn spawn(
     // TODO: I'm trying to input the basic example from https://github.com/Selene-Amanita/bevy_basic_portals/blob/main/examples/basic/main.rs there.
     // It's failing with a horrible error message :'(
 
-    let portal_mesh = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(10., 10.))));
+    let portal_mesh = get_or_add_mesh_portal_handle(&mut meshes);
+    let portal_position = Transform::from_xyz(
+        transform.translation.x,
+        transform.translation.y + 3.,
+        transform.translation.z,
+    );
     commands.spawn(CreatePortalBundle {
         mesh: portal_mesh,
+        portal_transform: transform,
         // This component will be deleted and things that are needed to create the portal will be created
         create_portal: CreatePortal {
             destination: AsPortalDestination::Create(CreatePortalDestination {
-                transform: Transform::from_xyz(20., 0., 0.),
+                transform: portal_position,
                 ..default()
             }),
             // Uncomment this to see the portal
-            /*debug: Some(DebugPortal {
+            debug: Some(DebugPortal {
                 show_window: false,
                 ..default()
-            }),*/
+            }),
             // I have to provide a camera because there are multiple cameras in foxtrot.
             main_camera: None,
+
             ..default()
         },
         ..default()
     });
 
     let sphere_mesh = meshes.add(Mesh::from(shape::UVSphere {
-        radius: 2.,
+        radius: 0.25,
         ..default()
     }));
+    let mut ball_pos = portal_position.translation;
+    ball_pos += Vec3::Z * -1.;
     commands.spawn(PbrBundle {
-        mesh: sphere_mesh,
-        transform: Transform::from_xyz(20., 0., -5.),
+        mesh: sphere_mesh.clone(),
+        transform: Transform::from_translation(ball_pos),
         ..default()
     });
     // End remove
@@ -73,7 +79,7 @@ pub(crate) fn spawn(
 
     /*
     let mesh_handle = get_or_add_mesh_handle(&mut meshes);
-    /*commands.spawn(CreatePortalBundle {
+    commands.spawn(CreatePortalBundle {
         mesh: mesh_handle,
         portal_transform: transform,
         // This component will be deleted and things that are needed to create the portal will be created
@@ -95,7 +101,7 @@ pub(crate) fn spawn(
         },
         ..default()
     });*/
-
+    /*
     let entity = commands
         .spawn((
             PbrBundle {

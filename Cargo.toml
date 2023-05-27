@@ -1,5 +1,5 @@
 [package]
-authors = ["Jan Hohenheim <jan@hohenheim.ch>"]
+authors = ["Thierry Berger <contact@thierryberger.com>"]
 edition = "2021"
 name = "detectivefox"
 version = "0.2.0"
@@ -13,11 +13,10 @@ exclude = [
     "resources",
     "build.rs",
 ]
-description = "The all-in-one Bevy 3D game template."
-repository = "https://github.com/janhohenheim/foxtrot"
-keywords = ["gamedev", "bevy", "template", "game"]
-categories = ["game-development"]
-homepage = "https://janhohenheim.github.io/foxtrot/"
+description = "Foxtrot + portals for rusty game jam 3."
+repository = "https://github.com/Vrixyz/foxtrot"
+keywords = ["game", "bevy", "game", "rustyjam"]
+categories = ["game"]
 
 [features]
 default = ["native-dev"]
