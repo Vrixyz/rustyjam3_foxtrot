@@ -19,7 +19,7 @@ keywords = ["game", "bevy", "game", "rustyjam"]
 categories = ["game"]
 
 [features]
-default = ["native-dev"]
+default = ["native"]
 
 core = [
     "bevy/animation",
