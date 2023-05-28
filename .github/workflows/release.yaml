@@ -1,211 +1,238 @@
-name: release-flow
+name: Release
 
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+*"
+      - "*"
 
 env:
-  # heads-up: this value is used as a pattern in a sed command as a workaround for a trunk issue
-  #   if you use special characters, take a look at the 'Make paths relative' step in the 'build-web' job
-  GAME_EXECUTABLE_NAME: foxtrot
-  GAME_OSX_APP_NAME: Foxtrot
-
-  CARGO_TERM_COLOR: always
-  NIGHTLY_TOOLCHAIN: nightly
-  # Sparse cargo registry for faster updates
-  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
-
-permissions:
-  contents: write
+  # update with the name of the main binary
+  binary: detectivefox
+  add_binaries_to_github_release: true
+  itch_target: Vrixyz/detective-fox
 
 jobs:
-  build-macOS:
-    runs-on: macos-latest
-
-    env:
-      # macOS 11.0 Big Sur is the first version of macOS to support universal binaries
-      MACOSX_DEPLOYMENT_TARGET: 11.0
-    steps:
-      - name: Get tag
-        id: tag
-        uses: dawidd6/action-get-tag@v1
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          lfs: true
-      - name: Check out LFS objects
-        run: |
-          git lfs pull
-      - name: Remove build script
-        run: |
-          rm build.rs
-      - name: Install rust toolchain for Apple Silicon
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.NIGHTLY_TOOLCHAIN }}
-          target: aarch64-apple-darwin
-      - name: Install zld
-        run: |
-          brew install michaeleisel/zld/zld
-      - name: Build release for Apple Silicon
-        run: |
-          SDKROOT=$(xcrun -sdk macosx --show-sdk-path) RUSTFLAGS="-C link-arg=-fuse-ld=/usr/local/bin/zld -Z share-generics=y" cargo build --release --no-default-features --features native --target=aarch64-apple-darwin
-      - name: Install rust toolchain for Apple x86
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.NIGHTLY_TOOLCHAIN }}
-          target: x86_64-apple-darwin
-      - name: Build release for x86 Apple
-        run: |
-          SDKROOT=$(xcrun -sdk macosx --show-sdk-path) cargo build --release --no-default-features --features native --target=x86_64-apple-darwin
-      - name: Create Universal Binary
-        run: |
-          lipo -create -output target/release/${{ env.GAME_EXECUTABLE_NAME }} target/aarch64-apple-darwin/release/${{ env.GAME_EXECUTABLE_NAME }} target/x86_64-apple-darwin/release/${{ env.GAME_EXECUTABLE_NAME }}
-      - name: Create release
-        run: |
-          mkdir -p build/macos/src/Game.app/Contents/MacOS/assets
-          cp -r assets/ build/macos/src/Game.app/Contents/MacOS/assets
-          cp -r credits/ build/macos/src/Game.app/Contents/MacOS/credits
-          cp target/release/${{ env.GAME_EXECUTABLE_NAME }} build/macos/src/Game.app/Contents/MacOS/
-          strip build/macos/src/Game.app/Contents/MacOS/${{ env.GAME_EXECUTABLE_NAME }}
-          mv build/macos/src/Game.app build/macos/src/${{ env.GAME_OSX_APP_NAME }}.app
-          ln -s /Applications build/macos/src/
-          hdiutil create -fs HFS+ -volname "${{ env.GAME_OSX_APP_NAME }}" -srcfolder build/macos/src ${{ env.GAME_EXECUTABLE_NAME }}.dmg
-      - name: Upload release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.GAME_EXECUTABLE_NAME }}.dmg
-          asset_name: ${{ env.GAME_EXECUTABLE_NAME }}_${{ steps.tag.outputs.tag }}_macOS.dmg
-          tag: ${{ github.ref }}
-          overwrite: true
-
-  build-linux:
+  # Build for wasm
+  release-wasm:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get tag
-        id: tag
-        uses: dawidd6/action-get-tag@v1
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: olegtarasov/get-tag@v2.1.2
+        id: get_version
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          lfs: true
-      - name: Check out LFS objects
+          targets: wasm32-unknown-unknown
+      - name: install wasm-bindgen-cli
         run: |
-          git lfs pull
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
+          cargo install wasm-bindgen-cli
+
+      - name: Build
+        run: |
+          cargo build --release --target wasm32-unknown-unknown
+
+      - name: Prepare package
+        run: |
+          wasm-bindgen --no-typescript --out-name bevy_game --out-dir wasm --target web target/wasm32-unknown-unknown/release/${{ env.binary }}.wasm
+          cp -r assets wasm/
+
+      - name: Package as a zip
+        working-directory: ./wasm
+        run: |
+          zip --recurse-paths ../${{ env.binary }}.zip .
+
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v3
         with:
-          toolchain: ${{ env.NIGHTLY_TOOLCHAIN }}
-      - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
-      - name: Build release
-        run: |
-          cargo build --release --no-default-features --features native
-      - name: Prepare release
-        run: |
-          strip target/release/${{ env.GAME_EXECUTABLE_NAME }}
-          chmod +x target/release/${{ env.GAME_EXECUTABLE_NAME }}
-          mv target/release/${{ env.GAME_EXECUTABLE_NAME }} .
-      - name: Bundle release
-        run: |
-          tar -czf ${{ env.GAME_EXECUTABLE_NAME }}_linux.tar.gz ${{ env.GAME_EXECUTABLE_NAME }} assets credits
-      - name: Upload release
+          path: ${{ env.binary }}.zip
+          name: wasm
+
+      - name: Upload binaries to release
+        if: ${{ env.add_binaries_to_github_release == 'true' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.GAME_EXECUTABLE_NAME }}_linux.tar.gz
-          asset_name: ${{ env.GAME_EXECUTABLE_NAME }}_${{ steps.tag.outputs.tag }}_linux.tar.gz
+          file: ${{ env.binary }}.zip
+          asset_name: ${{ env.binary }}-wasm-${{ steps.get_version.outputs.tag }}.zip
           tag: ${{ github.ref }}
           overwrite: true
 
-  build-windows:
+  # Build for Linux
+  release-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: olegtarasov/get-tag@v2.1.2
+        id: get_version
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+      - name: install dependencies
+        run: |
+          sudo apt-get update; sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+
+      - name: Build
+        run: |
+          cargo build --release --target x86_64-unknown-linux-gnu
+
+      - name: Prepare package
+        run: |
+          mkdir linux
+          cp target/x86_64-unknown-linux-gnu/release/${{ env.binary }} linux/
+          cp -r assets linux/
+
+      - name: Package as a zip
+        working-directory: ./linux
+        run: |
+          zip --recurse-paths ../${{ env.binary }}.zip .
+
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          path: ${{ env.binary }}.zip
+          name: linux
+
+      - name: Upload binaries to release
+        if: ${{ env.add_binaries_to_github_release == 'true' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ env.binary }}.zip
+          asset_name: ${{ env.binary }}-linux-${{ steps.get_version.outputs.tag }}.zip
+          tag: ${{ github.ref }}
+          overwrite: true
+
+  # Build for Windows
+  release-windows:
     runs-on: windows-latest
 
     steps:
-      - name: Get tag
-        id: tag
-        uses: dawidd6/action-get-tag@v1
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: olegtarasov/get-tag@v2.1.2
+        id: get_version
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          lfs: true
-      - name: Check out LFS objects
+          targets: x86_64-pc-windows-msvc
+
+      - name: Build
         run: |
-          git lfs pull
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.NIGHTLY_TOOLCHAIN }}
-      - name: Install dotnet
-        uses: actions/setup-dotnet@v3
-        with:
-          global-json-file: build/windows/installer/global.json
-      - name: Build release
+          cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Prepare package
         run: |
-          cargo build --release --no-default-features --features native
-      - name: Prepare release
+          mkdir windows
+          cp target/x86_64-pc-windows-msvc/release/${{ env.binary }}.exe windows/
+          cp -r assets windows/
+
+      - name: Package as a zip
         run: |
-          mkdir target/release/assets && cp -r assets target/release/assets
-          mkdir target/release/credits && cp -r credits target/release/credits
-      - name: Zip release
-        uses: vimtor/action-zip@v1
+          Compress-Archive -Path windows/* -DestinationPath ${{ env.binary }}.zip
+
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v3
         with:
-          files: target/release/assets/ target/release/credits/ target/release/${{ env.GAME_EXECUTABLE_NAME }}.exe
-          dest: ${{ env.GAME_EXECUTABLE_NAME }}_windows.zip
-      - name: Create Installer
-        run: dotnet build -c Release build/windows/installer/Installer.wixproj --output installer
-      - name: Upload release
+          path: ${{ env.binary }}.zip
+          name: windows
+
+      - name: Upload binaries to release
+        if: ${{ env.add_binaries_to_github_release == 'true' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.GAME_EXECUTABLE_NAME }}_windows.zip
-          asset_name: ${{ env.GAME_EXECUTABLE_NAME }}_${{ steps.tag.outputs.tag }}_windows.zip
+          file: ${{ env.binary }}.zip
+          asset_name: ${{ env.binary }}-windows-${{ steps.get_version.outputs.tag }}.zip
           tag: ${{ github.ref }}
           overwrite: true
-      - name: Upload installer
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: installer/en-US/installer.msi
-          asset_name: ${{ env.GAME_EXECUTABLE_NAME }}_${{ steps.tag.outputs.tag }}_windows.msi
-          tag: ${{ github.ref }}
-          overwrite: true
-  build-web:
-    runs-on: ubuntu-latest
+
+  # Build for macOS
+  release-macos:
+    runs-on: macOS-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: olegtarasov/get-tag@v2.1.2
+        id: get_version
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          lfs: true
-      - name: Check out LFS objects
+          targets: x86_64-apple-darwin
+      - name: Environment Setup
         run: |
-          git lfs pull
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.NIGHTLY_TOOLCHAIN }}
-      - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
-      - name: Install trunk
-        uses: jetli/trunk-action@v0.1.0
-        with:
-          version: "v0.16.0"
-      - name: Add wasm target
+          export CFLAGS="-fno-stack-check"
+          export MACOSX_DEPLOYMENT_TARGET="10.9"
+
+      - name: Build
         run: |
-          rustup target add wasm32-unknown-unknown
-      - name: Build Release
+          cargo build --release --target x86_64-apple-darwin
+
+      - name: Prepare Package
         run: |
-          trunk build --release --public-url "${GITHUB_REPOSITORY#*/}" --no-default-features --features wasm
-      - name: Optimize Wasm
-        uses: NiklasEi/wasm-opt-action@v2
+          mkdir -p ${{ env.binary }}.app/Contents/MacOS
+          cp target/x86_64-apple-darwin/release/${{ env.binary }} ${{ env.binary }}.app/Contents/MacOS/
+          cp -r assets ${{ env.binary }}.app/Contents/MacOS/
+          hdiutil create -fs HFS+ -volname "${{ env.binary }}" -srcfolder ${{ env.binary }}.app ${{ env.binary }}.dmg
+
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v3
         with:
-          file: dist/*.wasm
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4.2.5
+          path: ${{ env.binary }}.dmg
+          name: mac
+
+      - name: Upload binaries to release
+        if: ${{ env.add_binaries_to_github_release == 'true' }}
+        uses: svenstaro/upload-release-action@v2
         with:
-          branch: gh-pages
-          folder: dist
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ env.binary }}.dmg
+          asset_name: ${{ env.binary }}-macos-${{ steps.get_version.outputs.tag }}.dmg
+          tag: ${{ github.ref }}
+          overwrite: true
+
+  check-if-upload-to-itch-is-configured:
+    runs-on: ubuntu-latest
+    outputs:
+      should-upload: ${{ steps.check-env.outputs.has-itch-target }}
+    steps:
+      - id: check-env
+        run: |
+          if [[ -z "$itch_target" ]]; then
+            echo "has-itch-target=no" >> $GITHUB_OUTPUT
+          else
+            echo "has-itch-target=yes" >> $GITHUB_OUTPUT
+          fi
+
+  upload-to-itch:
+    runs-on: ubuntu-latest
+    needs:
+      - check-if-upload-to-itch-is-configured
+      - release-wasm
+      - release-linux
+      - release-windows
+      - release-macos
+    if: ${{ needs.check-if-upload-to-itch-is-configured.outputs.should-upload == 'yes' }}
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./builds
+
+      - name: Install butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+          unzip butler.zip
+          chmod +x butler
+          ./butler -V
+      - uses: olegtarasov/get-tag@v2.1.2
+        id: get_version
+      - name: Upload to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_CREDENTIALS }}
+        run: |
+          for channel in $(ls builds); do
+            ./butler push \
+                --fix-permissions \
+                --userversion="${{ steps.get_version.outputs.tag }}" \
+                builds/$channel/* \
+                ${{ env.itch_target }}:$channel
+          done

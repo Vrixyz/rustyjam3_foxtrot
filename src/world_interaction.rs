@@ -1,3 +1,4 @@
+pub(crate) mod close_portal;
 pub(crate) mod condition;
 pub(crate) mod dialog;
 pub(crate) mod interactions_ui;
@@ -8,6 +9,8 @@ use crate::world_interaction::interactions_ui::interactions_ui_plugin;
 use bevy::prelude::*;
 use seldom_fn_plugin::FnPluginExt;
 
+use self::close_portal::close_portal_plugin;
+
 /// Handles player to world interactions. Split in to the following sub-plugins:
 /// - [`condition_plugin`] handles trackers of player actions such as chosen dialog options
 /// - [`dialog_plugin`] handles dialog trees
@@ -15,5 +18,6 @@ use seldom_fn_plugin::FnPluginExt;
 pub(crate) fn world_interaction_plugin(app: &mut App) {
     app.fn_plugin(condition_plugin)
         .fn_plugin(dialog_plugin)
-        .fn_plugin(interactions_ui_plugin);
+        .fn_plugin(interactions_ui_plugin)
+        .fn_plugin(close_portal_plugin);
 }

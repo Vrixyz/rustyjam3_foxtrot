@@ -1,3 +1,4 @@
+use crate::level_instantiation::spawning::objects::portal::ClosePortalTarget;
 use crate::player_control::actions::PlayerAction;
 use crate::player_control::camera::{IngameCamera, IngameCameraKind};
 use crate::player_control::player_embodiment::Player;
@@ -15,6 +16,8 @@ use leafwing_input_manager::prelude::ActionState;
 use serde::{Deserialize, Serialize};
 use std::f32::consts::TAU;
 
+use super::close_portal::resources::ClosePortalEvent;
+
 pub(crate) fn interactions_ui_plugin(app: &mut App) {
     app.register_type::<InteractionOpportunities>()
         .init_resource::<InteractionOpportunities>()
@@ -23,9 +26,13 @@ pub(crate) fn interactions_ui_plugin(app: &mut App) {
                 .chain()
                 .in_set(OnUpdate(GameState::Playing)),
         )
-        .add_system(
-            display_interaction_prompt
-                .run_if(resource_exists::<InteractionUi>().and_then(not(is_frozen)))
+        .add_systems(
+            (
+                display_interaction_prompt
+                    .run_if(resource_exists::<InteractionUi>().and_then(not(is_frozen))),
+                display_interaction_portal_prompt
+                    .run_if(resource_exists::<InteractionUi>().and_then(not(is_frozen))),
+            )
                 .in_set(OnUpdate(GameState::Playing)),
         );
 }
@@ -83,7 +90,8 @@ fn update_interaction_ui(
                     *camera_transform,
                     camera,
                 );
-                if is_facing_target {
+                valid_target = Some(*entity);
+                if dbg!(is_facing_target) {
                     valid_target = Some(*entity);
                     break;
                 }
@@ -179,6 +187,37 @@ fn display_interaction_prompt(
                     source: interaction_ui.source,
                     dialog: dialog_target.dialog_id.clone(),
                     page: None,
+                });
+            }
+        }
+    }
+    Ok(())
+}
+#[sysfail(log(level = "error"))]
+fn display_interaction_portal_prompt(
+    interaction_ui: Res<InteractionUi>,
+    mut dialog_event_writer: EventWriter<ClosePortalEvent>,
+    mut egui_contexts: EguiContexts,
+    actions: Query<&ActionState<PlayerAction>>,
+    primary_windows: Query<&Window, With<PrimaryWindow>>,
+    close_portal_target_query: Query<&ClosePortalTarget>,
+) -> Result<()> {
+    for actions in actions.iter() {
+        let window = primary_windows
+            .get_single()
+            .context("Failed to get primary window")?;
+        egui::Window::new("Interaction")
+            .collapsible(false)
+            .title_bar(false)
+            .auto_sized()
+            .fixed_pos(egui::Pos2::new(window.width() / 2., window.height() / 2.))
+            .show(egui_contexts.ctx_mut(), |ui| {
+                ui.label("E: Close portal");
+            });
+        if actions.just_pressed(PlayerAction::Interact) {
+            if let Ok(closePortal) = close_portal_target_query.get(interaction_ui.source) {
+                dialog_event_writer.send(ClosePortalEvent {
+                    source: interaction_ui.source,
                 });
             }
         }

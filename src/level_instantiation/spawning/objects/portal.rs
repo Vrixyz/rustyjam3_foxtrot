@@ -1,20 +1,26 @@
 use crate::file_system_interaction::asset_loading::{AnimationAssets, SceneAssets};
 use crate::level_instantiation::spawning::objects::GameCollisionGroup;
 use crate::level_instantiation::spawning::GameObject;
-use crate::movement::general_movement::{CharacterAnimations, CharacterControllerBundle, Model};
+use crate::movement::general_movement::{CharacterAnimations, Model};
 use crate::player_control::camera::IngameCamera;
-use crate::util::delay_destroy::DelayDestroy;
-use crate::world_interaction::dialog::{DialogId, DialogTarget};
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy_basic_portals::*;
 use bevy_rapier3d::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::f32::consts::TAU;
 
 use super::util::MeshAssetsExt;
 
 pub(crate) const HEIGHT: f32 = 0.4;
 pub(crate) const RADIUS: f32 = 0.4;
+
+#[derive(Component, Reflect)]
+pub struct PortalEntities(pub Vec<Entity>);
+
+#[derive(Component, Debug, Clone, Eq, PartialEq, Reflect, Serialize, Deserialize, FromReflect)]
+#[reflect(Serialize, Deserialize)]
+pub struct ClosePortalTarget;
 
 fn get_or_add_mesh_portal_handle(mesh_assets: &mut Assets<Mesh>) -> Handle<Mesh> {
     const MESH_HANDLE: HandleUntyped =
@@ -34,15 +40,16 @@ pub(crate) fn spawn(
     camera_query: Query<Entity, With<IngameCamera>>,
 ) {
     let portal_die_time = time.elapsed_seconds() + 15f32;
-    let delay_destroy = DelayDestroy::new(portal_die_time);
+    //let delay_destroy = DelayDestroy::new(portal_die_time);
     let portal_mesh = get_or_add_mesh_portal_handle(&mut meshes);
     let portal_position = Transform::from_xyz(
         transform.translation.x,
         transform.translation.y + 150.,
         transform.translation.z,
     );
-    commands
+    let portal_entity = commands
         .spawn((
+            RigidBody::KinematicPositionBased,
             CreatePortalBundle {
                 mesh: portal_mesh,
                 portal_transform: transform,
@@ -64,43 +71,32 @@ pub(crate) fn spawn(
                 },
                 ..default()
             },
-            delay_destroy,
+            //delay_destroy,
         ))
         .with_children(|parent| {
             parent.spawn((
+                Transform::from_translation(transform.translation),
                 Name::new("Portal Close Collider"),
-                Collider::cylinder(HEIGHT / 2., RADIUS * 5.),
+                Collider::cylinder(HEIGHT * 50., RADIUS * 50.),
                 Sensor,
                 ActiveEvents::COLLISION_EVENTS,
-                ActiveCollisionTypes::DYNAMIC_DYNAMIC,
                 CollisionGroups::new(
                     GameCollisionGroup::OTHER.into(),
                     GameCollisionGroup::PLAYER.into(),
                 ),
+                ClosePortalTarget,
             ));
-        });
-
-    let sphere_mesh = meshes.add(Mesh::from(shape::UVSphere {
-        radius: 0.25,
-        ..default()
-    }));
+        })
+        .id();
     let mut inside_portal_pos = portal_position.translation;
     inside_portal_pos += Vec3::Z * -1.;
-    commands.spawn((
-        PbrBundle {
-            mesh: sphere_mesh.clone(),
-            transform: Transform::from_translation(inside_portal_pos),
-            ..default()
-        },
-        delay_destroy,
-    ));
     // End remove
 
     // This is my attempt to create something more complex, but let's focus on the minimal above.
 
     //inside_portal_pos += Vec3::Z * -2.;
 
-    let entity = commands
+    let model_entity = commands
         .spawn((
             (
                 PbrBundle {
@@ -115,15 +111,17 @@ pub(crate) fn spawn(
                     aerial: animations.character_running.clone(),
                 },
             ),
-            delay_destroy,
+            //delay_destroy,
         ))
         .id();
-    commands
+    let scene_entity = commands
         .spawn((
-            Model { target: entity },
+            Model {
+                target: model_entity,
+            },
             SpatialBundle::default(),
             Name::new("Portal Model Parent"),
-            delay_destroy,
+            //delay_destroy,
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -138,5 +136,12 @@ pub(crate) fn spawn(
                 },
                 Name::new("Portal Model"),
             ));
-        });
+        })
+        .id();
+
+    commands.entity(portal_entity).insert(PortalEntities(vec![
+        portal_entity,
+        model_entity,
+        scene_entity,
+    ]));
 }

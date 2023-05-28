@@ -6,6 +6,7 @@ use crate::player_control::player_embodiment::Player;
 use crate::GameState;
 use bevy::prelude::*;
 use bevy_basic_portals::portals::PortalsPlugin;
+use bevy_basic_portals::PortalDestination;
 use bevy_egui::{egui, EguiContexts};
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -74,6 +75,7 @@ fn spawn_portals(
     mut delayed_spawner: EventWriter<SpawnEvent<GameObject, Transform>>,
     mut timer: Local<Timer>,
     mut random_spawn: Local<Option<SmallRng>>,
+    q_portal: Query<Entity, With<PortalDestination>>,
 ) {
     let Some(rng) = &mut *random_spawn else {
         *random_spawn = Some(SmallRng::from_entropy());
@@ -81,9 +83,14 @@ fn spawn_portals(
     };
     timer.tick(time.delta());
     if timer.finished() {
-        timer.set_duration(Duration::from_secs(5));
+        timer.set_duration(Duration::from_secs(1));
         timer.reset();
 
+        let portal_count = q_portal.iter().count();
+
+        if 3 <= portal_count {
+            return;
+        }
         // Make sure the portal is spawned after the level
         delayed_spawner.send(
             SpawnEvent::with_data(
