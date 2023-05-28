@@ -25,7 +25,7 @@ pub(crate) fn interactions_ui_plugin(app: &mut App) {
             (update_interaction_opportunities, update_interaction_ui)
                 .chain()
                 .in_set(OnUpdate(GameState::Playing)),
-        )
+        ) /*
         .add_systems(
             (
                 display_interaction_prompt
@@ -33,6 +33,11 @@ pub(crate) fn interactions_ui_plugin(app: &mut App) {
                 display_interaction_portal_prompt
                     .run_if(resource_exists::<InteractionUi>().and_then(not(is_frozen))),
             )
+                .in_set(OnUpdate(GameState::Playing)),
+        )*/
+        .add_system(
+            display_interaction_portal_prompt
+                .run_if(resource_exists::<InteractionUi>().and_then(not(is_frozen)))
                 .in_set(OnUpdate(GameState::Playing)),
         );
 }
@@ -91,7 +96,7 @@ fn update_interaction_ui(
                     camera,
                 );
                 valid_target = Some(*entity);
-                if dbg!(is_facing_target) {
+                if is_facing_target {
                     valid_target = Some(*entity);
                     break;
                 }
@@ -196,11 +201,11 @@ fn display_interaction_prompt(
 #[sysfail(log(level = "error"))]
 fn display_interaction_portal_prompt(
     interaction_ui: Res<InteractionUi>,
-    mut dialog_event_writer: EventWriter<ClosePortalEvent>,
+    mut close_portal_event_writer: EventWriter<ClosePortalEvent>,
     mut egui_contexts: EguiContexts,
-    actions: Query<&ActionState<PlayerAction>>,
+    actions: Query<&mut ActionState<PlayerAction>>,
     primary_windows: Query<&Window, With<PrimaryWindow>>,
-    close_portal_target_query: Query<&ClosePortalTarget>,
+    close_portal_target_query: Query<(Entity, &ClosePortalTarget)>,
 ) -> Result<()> {
     for actions in actions.iter() {
         let window = primary_windows
@@ -215,8 +220,10 @@ fn display_interaction_portal_prompt(
                 ui.label("E: Close portal");
             });
         if actions.just_pressed(PlayerAction::Interact) {
+            dbg!("interact");
             if let Ok(closePortal) = close_portal_target_query.get(interaction_ui.source) {
-                dialog_event_writer.send(ClosePortalEvent {
+                dbg!("found ClosePortalTarget, sending event");
+                close_portal_event_writer.send(ClosePortalEvent {
                     source: interaction_ui.source,
                 });
             }

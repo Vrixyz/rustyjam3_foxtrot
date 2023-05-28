@@ -43,7 +43,12 @@ core = [
     "bevy/serialize",
     "bevy/trace",
 ]
-dev = ["dep:bevy_editor_pls", "dep:bevy_prototype_debug_lines", "core"]
+dev = [
+    "dep:bevy_editor_pls",
+    "dep:bevy_prototype_debug_lines",
+    "core",
+    "bevy_diagnostics_explorer",
+]
 
 native-dev = ["bevy/bevy_dylib", "bevy/filesystem_watcher", "dev", "native"]
 
@@ -93,7 +98,7 @@ bevy_mod_sysfail = "2"
 seldom_fn_plugin = "0.3"
 
 bevy_basic_portals = { git = "https://github.com/Vrixyz/bevy_basic_portals.git", branch = "find-first-camera" }
-bevy_diagnostics_explorer = "0.1.0"
+bevy_diagnostics_explorer = { version = "0.1.0", optional = true }
 
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.28", default-features = false }

@@ -6,6 +6,7 @@ use bevy::window::PrimaryWindow;
 #[cfg(not(feature = "wasm"))]
 use bevy::window::WindowMode;
 use bevy::winit::WinitWindows;
+#[cfg(feature = "native-dev")]
 use bevy_diagnostics_explorer::DiagnosticExplorerAgentPlugin;
 use bevy_mod_sysfail::macros::*;
 use std::io::Cursor;
@@ -29,6 +30,7 @@ pub(crate) fn bevy_config_plugin(app: &mut App) {
             ..default()
         })
         .disable::<LogPlugin>()
+    #[cfg(feature = "native-dev")]
         .add(DiagnosticExplorerAgentPlugin);
     #[cfg(feature = "native-dev")]
     let default_plugins = default_plugins.set(AssetPlugin {

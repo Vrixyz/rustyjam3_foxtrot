@@ -49,6 +49,7 @@ pub(crate) fn spawn(
     );
     let portal_entity = commands
         .spawn((
+            ClosePortalTarget,
             RigidBody::KinematicPositionBased,
             CreatePortalBundle {
                 mesh: portal_mesh,
@@ -75,16 +76,14 @@ pub(crate) fn spawn(
         ))
         .with_children(|parent| {
             parent.spawn((
-                Transform::from_translation(transform.translation),
                 Name::new("Portal Close Collider"),
-                Collider::cylinder(HEIGHT * 50., RADIUS * 50.),
+                Collider::cylinder(HEIGHT, RADIUS * 5.),
                 Sensor,
                 ActiveEvents::COLLISION_EVENTS,
                 CollisionGroups::new(
                     GameCollisionGroup::OTHER.into(),
                     GameCollisionGroup::PLAYER.into(),
                 ),
-                ClosePortalTarget,
             ));
         })
         .id();
